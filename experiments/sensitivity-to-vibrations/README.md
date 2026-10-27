@@ -12,7 +12,7 @@ Foram coletadas duas amostras de 60 s, com os mesmos parâmetros de aquisição 
 ## Material e ligações
 
 - Interferômetro de Michelson, calibrado até o padrão de interferência ficar nítido e estável
-- Laser de comprimento de onda $\lambda$ = **[preencher, em nm]**
+- Laser de comprimento de onda $\lambda = 532\text{ nm}$ (Laser Verde)
 - Placa Arduino (Uno ou Nano) com conversor analógico-digital de 10 bits (valores de 0 a 1023)
 - Módulo sensor LDR com saída analógica (AO)
 - Máscara com furo pequeno (cerca de 0,5 a 1 mm) na frente do LDR, para que o sensor veja apenas uma fração de uma franja
@@ -27,7 +27,7 @@ A saída digital (DO) do módulo não é usada.
 
 ## Estrutura da pasta
 
-```
+```text
 01-vibracoes-ldr/
 ├── README.md
 ├── arduino/contador_franjas/contador_franjas.ino   # código de coleta
@@ -37,68 +37,7 @@ A saída digital (DO) do módulo não é usada.
 └── data/                                           # arquivos .csv gravados
 ```
 
-## Como usar
-
-Os comandos abaixo devem ser executados de dentro desta pasta.
-
-**1. Carregar o código no Arduino.** Abra `arduino/contador_franjas/contador_franjas.ino` no Arduino IDE, selecione a placa e a porta em Ferramentas e clique em Carregar. O nome da pasta deve ser igual ao do arquivo, como já está. Opcionalmente, abra o Plotter Serial (115200 baud) para conferir se o sinal oscila quando as franjas passam, e feche-o antes do passo seguinte.
-
-**2. Gravar e analisar.**
-
-```bash
-pip install -r python/requirements.txt
-
-# grava 60 s de dados (troque COM3 pela sua porta; no Linux, algo como /dev/ttyACM0)
-python python/analise_vibracao.py log COM3 60 data/amostra1.csv
-
-# analisa o arquivo, informando o comprimento de onda do laser em nm
-python python/analise_vibracao.py analisar data/amostra1.csv 532
-```
-
-A análise imprime no terminal a frequência de amostragem, a amplitude do sinal, o número de franjas, o deslocamento total, o valor RMS e a frequência dominante, e abre uma janela com três gráficos: sinal do sensor, deslocamento pela contagem e espectro de frequências.
-
-## Parâmetros do código de coleta
-
-A coluna "Símbolo" é a usada nas equações abaixo. A tabela em imagem, para uso em slides, está em [`figuras/tabela_ajustes.png`](figuras/tabela_ajustes.png).
-
-| Símbolo | Variável no código | Valor | Significado |
-|---|---|---|---|
-| $T_s$ | `PERIODO_US` | 5000 µs | Intervalo entre amostras (taxa de 200 Hz) |
-| $N$ | `N_OVERSAMPLE` | 4 | Leituras do conversor por amostra (média) |
-| $\beta$ | `HIST` | 0,25 | Folga de decisão (histerese), em fração da amplitude |
-| $A_{\min}$ | `SPAN_MIN` | 40 | Amplitude mínima para aceitar contagem |
-| $\alpha$ | `DECAIMENTO` | 0,002 | Velocidade de adaptação do máximo e do mínimo |
-| $\lambda$ | (argumento da análise) | [preencher] nm | Comprimento de onda do laser |
-
-## Funcionamento do código de coleta (Arduino)
-
-![Fluxograma do código de coleta](figuras/diagrama_arduino.png)
-
-*Fluxograma do código de coleta. Os nomes correspondem às variáveis do `.ino`.*
-
-O programa repete continuamente o ciclo abaixo:
-
-1. **Espera o próximo instante**, garantindo amostras em intervalos fixos $T_s$.
-2. **Lê o sensor $N$ vezes e faz a média**, reduzindo o ruído eletrônico de cada amostra.
-3. **Atualiza `vmax` e `vmin`**, que acompanham o sinal e decaem lentamente em direção a ele.
-4. **Calcula `meio`, `span` e a folga**: o ponto médio, a amplitude e as linhas de decisão.
-5. **Decide se conta uma franja**, com histerese e trava de ruído.
-6. **Envia pela serial** a linha `t_us,leitura,franjas`.
-
-A figura a seguir mostra, com um sinal simulado, por que são usadas duas linhas de decisão em vez de uma:
-
-![Histerese](figuras/histerese_explicada.png)
-
-*Sinal simulado com duas franjas e ruído. Com uma linha só, o ruído gera contagens falsas (11); com histerese, a contagem é correta (2).*
-
-## Funcionamento do código de análise (Python)
-
-![Fluxograma do código de análise](figuras/diagrama_python.png)
-
-*Fluxograma do código de análise. Os nomes correspondem às funções de `analise_vibracao.py`.*
-
-- **`gravar`:** abre a porta serial a 115200 baud, aguarda 2 s (o Arduino reinicia ao abrir a porta) e grava no arquivo as linhas válidas durante o tempo pedido.
-- **`analisar`:** lê o arquivo e calcula a frequência de amostragem efetiva, a amplitude do sinal, o deslocamento pela contagem de franjas, o deslocamento pelo sinal bruto, o valor RMS e o espectro de frequências.
+---
 
 ## Detalhamento matemático
 
@@ -183,13 +122,13 @@ $$\Delta I \approx -I_0 C\,\delta = -\frac{A}{2}\cdot\frac{4\pi\,\Delta x}{\lamb
 
 Isolando $\Delta x$ (em módulo):
 
-$$\boxed{\,x = \frac{\lambda\,\Delta I}{2\pi A}\,}$$
+$$x = \frac{\lambda\,\Delta I}{2\pi A}$$
 
-em que $\Delta I = V - \bar{V}$ é a variação do sinal em relação à média. A sensibilidade, em deslocamento por unidade do conversor, é $\lambda/(2\pi A)$. Por exemplo, para $\lambda = 532$ nm e $A = 58$:
+em que $\Delta I = V - \bar{V}$ é a variação do sinal em relação à média. A sensibilidade, em deslocamento por unidade do conversor, é $\lambda/(2\pi A)$. Por exemplo, para $\lambda = 532\text{ nm}$ e $A = 58$:
 
 $$\frac{532\ \text{nm}}{2\pi \cdot 58} \approx 1{,}46\ \text{nm por unidade}$$
 
-**Validade.** A aproximação $\sin\delta \approx \delta$ tem erro de cerca de 16% para $\delta = 1$ rad, o que corresponde a $\Delta x = \lambda/(4\pi) \approx 0{,}08\,\lambda$. Por isso o programa emite um aviso quando o sinal varre mais de 40% da amplitude em torno da média. Nesse caso, a aproximação subestima o deslocamento e a contagem de franjas é o método mais adequado. Além disso, a amplitude $A$ vem dos próprios dados: se o sinal não varreu uma franja inteira, $A$ é subestimada e o deslocamento, superestimado.
+**Validade.** A aproximação $\sin\delta \approx \delta$ tem erro de cerca de 16% para $\delta = 1\text{ rad}$, o que corresponde a $\Delta x = \lambda/(4\pi) \approx 0{,}08\,\lambda$. Por isso o programa emite um aviso quando o sinal varre mais de 40% da amplitude em torno da média. Nesse caso, a aproximação subestima o deslocamento e a contagem de franjas é o método mais adequado. Além disso, a amplitude $A$ vem dos próprios dados: se o sinal não varreu uma franja inteira, $A$ é subestimada e o deslocamento, superestimado.
 
 ### 7. Valor RMS
 
@@ -217,10 +156,63 @@ $$\Delta f = \frac{f_s}{M} \approx 0{,}017\ \text{Hz}, \qquad f_{\text{Nyquist}}
 
 A frequência dominante é aquela em que $a[k]$ é máxima, excluindo $k = 0$ (componente contínua).
 
+---
+
+## Parâmetros do código de coleta
+
+Com base no detalhamento matemático apresentado acima, a tabela a seguir mapeia os símbolos com as variáveis utilizadas no código de coleta. A coluna "Símbolo" é a usada nas equações. A tabela em imagem, para uso em slides, está em [`figuras/tabela_ajustes.png`](figuras/tabela_ajustes.png).
+
+| Símbolo | Variável no código | Valor | Significado |
+|---|---|---|---|
+| $T_s$ | `PERIODO_US` | 5000 µs | Intervalo entre amostras (taxa de 200 Hz) |
+| $N$ | `N_OVERSAMPLE` | 4 | Leituras do conversor por amostra (média) |
+| $\beta$ | `HIST` | 0,25 | Folga de decisão (histerese), em fração da amplitude |
+| $A_{\min}$ | `SPAN_MIN` | 40 | Amplitude mínima para aceitar contagem |
+| $\alpha$ | `DECAIMENTO` | 0,002 | Velocidade de adaptação do máximo e do mínimo ($\tau = 2{,}5\text{ s}$) |
+| $\lambda$ | (argumento da análise) | 532 nm | Comprimento de onda do laser verde |
+
+---
+
+## Funcionamento do código de coleta (Arduino)
+
+![Fluxograma do código de coleta](figuras/diagrama_arduino.png)
+
+*Fluxograma do código de coleta. Os nomes correspondem às variáveis do `.ino`.*
+
+O programa repete continuamente o ciclo abaixo:
+
+1. **Espera o próximo instante**, garantindo amostras em intervalos fixos $T_s$.
+2. **Lê o sensor $N$ vezes e faz a média**, reduzindo o ruído eletrônico de cada amostra.
+3. **Atualiza `vmax` e `vmin`**, que acompanham o sinal e decaem lentamente em direção a ele.
+4. **Calcula `meio`, `span` e a folga**: o ponto médio, a amplitude e as linhas de decisão.
+5. **Decide se conta uma franja**, com histerese e trava de ruído.
+6. **Envia pela serial** a linha `t_us,leitura,franjas`.
+
+A figura a seguir mostra, com um sinal simulado, por que são usadas duas linhas de decisão em vez de uma:
+
+![Histerese](figuras/histerese_explicada.png)
+
+*Sinal simulado com duas franjas e ruído. Com uma linha só, o ruído gera contagens falsas (11); com histerese, a contagem é correta (2).*
+
+---
+
+## Funcionamento do código de análise (Python)
+
+![Fluxograma do código de análise](figuras/diagrama_python.png)
+
+*Fluxograma do código de análise. Os nomes correspondem às funções de `analise_vibracao.py`.*
+
+- **`gravar`:** abre a porta serial a 115200 baud, aguarda 2 s (o Arduino reinicia ao abrir a porta) e grava no arquivo as linhas válidas durante o tempo pedido.
+- **`analisar`:** lê o arquivo e calcula a frequência de amostragem efetiva, a amplitude do sinal, o deslocamento pela contagem de franjas, o deslocamento pelo sinal bruto, o valor RMS e o espectro de frequências.
+
+---
+
 ## Limitações
 
 - **O LDR é lento.** Seu tempo de resposta é da ordem de dezenas de milissegundos, de modo que vibrações acima de alguns hertz aparecem atenuadas no espectro, mesmo com amostragem de 200 Hz. Um fotodiodo ou fototransistor seria mais adequado.
-- **Um único sensor não dá o sentido do movimento.** Toda passagem de franja soma $+1$ ao contador. Para detectar o sentido seriam necessários dois sensores defasados de um quarto de franja.
+- **Um único sensor não dá o sentido do movimento.** 
+  - Na contagem macro, toda passagem de franja soma $+1$ ao contador (inversões de sentido continuam somando).
+  - No regime micro, flutuações de sentido oposto na mesma encosta da senoide geram o mesmo sinal analógico. Para detectar o sentido seriam necessários dois sensores defasados de um quarto de franja (quadratura dupla).
 - **A contagem depende da relação sinal/ruído.** Ela só é confiável se $\beta A > R_{pp}$ (seção 4).
 - **A conversão do sinal em deslocamento é uma aproximação linear**, válida para deslocamentos pequenos frente a $\lambda/4$ (seção 6).
 - **A deriva lenta** (temperatura, acomodação mecânica) aparece como componente de baixa frequência no espectro e no RMS, e não representa vibração. Um filtro passa-alta antes do cálculo do RMS reduziria esse efeito.
