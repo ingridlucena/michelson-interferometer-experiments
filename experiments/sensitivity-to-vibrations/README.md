@@ -102,7 +102,7 @@ Se $\beta A \le R_{pp}$, o ruído atravessa a faixa entre as linhas e gera conta
 
 Na análise, a frequência de amostragem é calculada pela mediana dos intervalos entre amostras consecutivas, $\Delta t_i$, que é pouco sensível a atrasos isolados:
 
-$$f_s = \frac{1}{\operatorname{mediana}(\Delta t_i)}$$
+$$f_s = \frac{1}{\text{mediana}(\Delta t_i)}$$
 
 A amplitude do sinal é calculada pelos percentis 99 e 1 da distribuição das leituras, o que reduz a influência de valores extremos isolados:
 
@@ -175,10 +175,6 @@ Com base no detalhamento matemático apresentado acima, a tabela a seguir mapeia
 
 ## Funcionamento do código de coleta (Arduino)
 
-![Fluxograma do código de coleta](figuras/diagrama_arduino.png)
-
-*Fluxograma do código de coleta. Os nomes correspondem às variáveis do `.ino`.*
-
 O programa repete continuamente o ciclo abaixo:
 
 1. **Espera o próximo instante**, garantindo amostras em intervalos fixos $T_s$.
@@ -188,19 +184,8 @@ O programa repete continuamente o ciclo abaixo:
 5. **Decide se conta uma franja**, com histerese e trava de ruído.
 6. **Envia pela serial** a linha `t_us,leitura,franjas`.
 
-A figura a seguir mostra, com um sinal simulado, por que são usadas duas linhas de decisão em vez de uma:
-
-![Histerese](figuras/histerese_explicada.png)
-
-*Sinal simulado com duas franjas e ruído. Com uma linha só, o ruído gera contagens falsas (11); com histerese, a contagem é correta (2).*
-
----
 
 ## Funcionamento do código de análise (Python)
-
-![Fluxograma do código de análise](figuras/diagrama_python.png)
-
-*Fluxograma do código de análise. Os nomes correspondem às funções de `analise_vibracao.py`.*
 
 - **`gravar`:** abre a porta serial a 115200 baud, aguarda 2 s (o Arduino reinicia ao abrir a porta) e grava no arquivo as linhas válidas durante o tempo pedido.
 - **`analisar`:** lê o arquivo e calcula a frequência de amostragem efetiva, a amplitude do sinal, o deslocamento pela contagem de franjas, o deslocamento pelo sinal bruto, o valor RMS e o espectro de frequências.
